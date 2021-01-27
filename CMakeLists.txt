@@ -25,6 +25,17 @@ option(BUILD_GRPC "build Cartographer gRPC support" false)
 set(CARTOGRAPHER_HAS_GRPC ${BUILD_GRPC})
 option(BUILD_PROMETHEUS "build Prometheus monitoring support" false)
 
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_BUILD_TYPE "Release")  #None, Debug, Release, RelWithDebInfo, MinSizeRel
+#set(CMAKE_BUILD_TYPE "Debug")  #None, Debug, Release, RelWithDebInfo, MinSizeRel
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -Wall -g -pthread -std=c++11 -fexceptions -frtti")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -Wall -g -pthread -std=c++11 -fexceptions -frtti")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -Wall -pthread -std=c++11 -fexceptions -frtti")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -Wall -pthread -std=c++11 -fexceptions -frtti")
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+
 include("${PROJECT_SOURCE_DIR}/cmake/functions.cmake")
 google_initialize_cartographer_project()
 google_enable_testing()
@@ -44,6 +55,10 @@ if(WIN32)
   set(protobuf_MODULE_COMPATIBLE TRUE CACHE INTERNAL "")
   find_package(Protobuf 3.0.0 CONFIG)
 else()
+  ## System dependencies are found with CMake's conventions
+  SET(CMAKE_MODULE_PATH  ${PROJECT_SOURCE_DIR}/cmake_modules_mod ${CMAKE_MODULE_PATH})
+  message(STATUS "---------------- ${CMAKE_MODULE_PATH}")
+
   find_package(Protobuf 3.0.0 REQUIRED)
 endif()
 
@@ -315,24 +330,25 @@ target_link_libraries(${TEST_LIB} PUBLIC ${PROJECT_NAME})
 set_target_properties(${TEST_LIB} PROPERTIES
   COMPILE_FLAGS ${TARGET_COMPILE_FLAGS})
 
-foreach(ABS_FIL ${ALL_TESTS})
-  file(RELATIVE_PATH REL_FIL ${PROJECT_SOURCE_DIR} ${ABS_FIL})
-  get_filename_component(DIR ${REL_FIL} DIRECTORY)
-  get_filename_component(FIL_WE ${REL_FIL} NAME_WE)
-  # Replace slashes as required for CMP0037.
-  string(REPLACE "/" "." TEST_TARGET_NAME "${DIR}/${FIL_WE}")
-  google_test("${TEST_TARGET_NAME}" ${ABS_FIL})
-  if(${BUILD_GRPC})
-    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC grpc++)
-    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC async_grpc)
-  endif()
-  if(${BUILD_PROMETHEUS})
-    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC ${ZLIB_LIBRARIES})
-    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC prometheus-cpp-core)
-    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC prometheus-cpp-pull)
-  endif()
-  target_link_libraries("${TEST_TARGET_NAME}" PUBLIC ${TEST_LIB})
-endforeach()
+## reference: [https://github.com/cartographer-project/cartographer/issues/1395]
+# foreach(ABS_FIL ${ALL_TESTS})
+#  file(RELATIVE_PATH REL_FIL ${PROJECT_SOURCE_DIR} ${ABS_FIL})
+#  get_filename_component(DIR ${REL_FIL} DIRECTORY)
+#  get_filename_component(FIL_WE ${REL_FIL} NAME_WE)
+#  # Replace slashes as required for CMP0037.
+#  string(REPLACE "/" "." TEST_TARGET_NAME "${DIR}/${FIL_WE}")
+#  google_test("${TEST_TARGET_NAME}" ${ABS_FIL})
+#  if(${BUILD_GRPC})
+#    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC grpc++)
+#    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC async_grpc)
+#  endif()
+#  if(${BUILD_PROMETHEUS})
+#    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC ${ZLIB_LIBRARIES})
+#    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC prometheus-cpp-core)
+#    target_link_libraries("${TEST_TARGET_NAME}" PUBLIC prometheus-cpp-pull)
+#  endif()
+#  target_link_libraries("${TEST_TARGET_NAME}" PUBLIC ${TEST_LIB})
+# endforeach()
 
 # Add the binary directory first, so that port.h is included after it has
 # been generated.
